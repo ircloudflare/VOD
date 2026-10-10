@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liquid Glass HLS Player</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<style>
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --glass-shine: rgba(255, 255, 255, 0.35);
+    --text: rgba(255, 255, 255, 0.9);
+    --muted: rgba(255, 255, 255, 0.55);
+    --accent: #8ec5ff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text);
+    background: #0b0d14;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    overflow-x: hidden;
+  }
+
+  /* Soft colored light behind the glass */
+  body::before, body::after {
+    content: "";
+    position: fixed;
+    width: 55vmax;
+    height: 55vmax;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.55;
+    z-index: -1;
+    pointer-events: none;
+  }
+  body::before { background: #3b6cff; top: -20vmax; left: -15vmax; }
+  body::after  { background: #c255ff; bottom: -20vmax; right: -15vmax; }
+
+  #wrap {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Glass panel holding the video */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    box-shadow:
+      inset 0 1px 0 var(--glass-shine),
+      0 20px 60px rgba(0, 0, 0, 0.35);
+  }
+
+  .player {
+    padding: 10px;
+    overflow: hidden;
+  }
+
+  video {
+    width: 100%;
+    display: block;
+    background: #000;
+    border-radius: 16px;
+    -webkit-user-select: none;
+    user-select: none;
+    max-height: 80vh;
+    object-fit: contain;
+  }
+  video:focus, video:focus-visible { outline: none; }
+
+  /* Control bar as a floating glass pill */
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    flex-wrap: wrap;
+  }
+
+  .bar input[type="text"] {
+    flex: 1;
+    min-width: 220px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .bar input[type="text"]:focus {
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .bar input[type="text"]::placeholder { color: var(--muted); }
+
+  .bar input[type="number"] {
+    width: 64px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 14px;
+    text-align: center;
+    outline: none;
+  }
+  .bar input[type="number"]:focus { border-color: var(--accent); }
+
+  .bar label {
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .proxy-toggle input {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  .bar select {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+  }
+  .bar select option { background: #151822; color: var(--text); }
+
+  .bar button {
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(142, 197, 255, 0.5);
+    background: linear-gradient(180deg, rgba(142, 197, 255, 0.35), rgba(142, 197, 255, 0.12));
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: transform 0.15s, filter 0.2s;
+  }
+  .bar button:hover { filter: brightness(1.15); }
+  .bar button:active { transform: scale(0.97); }
+
+  #stats {
+    align-self: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    min-height: 1.6em;
+  }
+
+  button, select, input { -webkit-tap-highlight-color: transparent; }
+
+  /* Tablets and phones */
+  @media (max-width: 900px) {
+    body { padding: 16px 12px; align-items: flex-start; }
+    #wrap { gap: 12px; }
+  }
+
+  /* Phones: stacked controls, large touch targets */
+  @media (max-width: 720px) {
+    body { padding: 10px 8px; }
+    #wrap { gap: 10px; }
+    .player { padding: 6px; border-radius: 18px; }
+    video { border-radius: 12px; max-height: 60vh; }
+    .bar { border-radius: 22px; padding: 10px; gap: 8px; }
+    .bar input[type="text"] {
+      flex: 1 1 100%;
+      min-width: 0;
+      font-size: 16px; /* prevents iOS from zooming on focus */
+      padding: 12px 14px;
+    }
+    .bar button, .bar select, .bar input[type="number"] {
+      min-height: 44px;
+      font-size: 16px;
+    }
+    .bar button, .bar select { flex: 1 1 auto; }
+    .bar label { flex: 1 1 auto; justify-content: space-between; }
+    .bar label input[type="number"] { width: 90px; }
+  }
+
+  /* Phones in landscape: give the video as much height as possible */
+  @media (max-height: 500px) and (orientation: landscape) {
+    body { padding: 0; }
+    #wrap { max-width: none; gap: 6px; }
+    .player { padding: 0; border-radius: 0; }
+    video { border-radius: 0; max-height: 100vh; }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="glass player">
+    <video id="video" controls playsinline></video>
+  </div>
+
+  <div class="glass bar">
+    <input id="src" type="text" placeholder="Paste .m3u8 URL">
+    <button id="load">Load</button>
+    <label class="proxy-toggle"><input id="useProxy" type="checkbox" checked> Proxy</label>
+    <select id="quality"><option value="-1">Auto</option></select>
+    <label>Seek
+      <input id="seekStep" type="number" min="0.1" step="any" value="5">
+    </label>
+  </div>
+
+  <div id="stats"></div>
+</div>
+
+<script>
+(function () {
+  // No default stream: paste an .m3u8 URL in the box, or use ?src=... in the page URL
+  var DEFAULT_SRC = "";
+
+  // Proxy route on this Worker. When the Proxy box is checked, streams go through it.
+  var PROXY_PATH = "/proxy?url=";
+
+  var video = document.getElementById("video");
+  var srcInput = document.getElementById("src");
+  var qualitySel = document.getElementById("quality");
+  var stats = document.getElementById("stats");
+  var seekInput = document.getElementById("seekStep");
+  var useProxyBox = document.getElementById("useProxy");
+  var hls = null;
+
+  // Remember the Proxy checkbox state between visits
+  try {
+    var savedProxy = localStorage.getItem("useProxy");
+    if (savedProxy !== null) useProxyBox.checked = savedProxy === "1";
+  } catch (err) {}
+  useProxyBox.onchange = function () {
+    try { localStorage.setItem("useProxy", useProxyBox.checked ? "1" : "0"); } catch (err) {}
+  };
+
+  // Allow ?src=... in the page URL to override the default stream
+  var params = new URLSearchParams(location.search);
+  srcInput.value = params.get("src") || DEFAULT_SRC;
+
+  function load(url) {
+    if (!url) {
+      stats.textContent = "Paste an .m3u8 URL and press Load";
+      return;
+    }
+    if (hls) { hls.destroy(); hls = null; }
+    qualitySel.innerHTML = '<option value="-1">Auto</option>';
+
+    var playUrl = useProxyBox.checked ? PROXY_PATH + encodeURIComponent(url) : url;
+
+    // Safari (including iOS) plays HLS natively, which is more reliable than hls.js there
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = playUrl;
+      video.addEventListener("error", function () {
+        stats.textContent = "Playback error (native HLS)";
+      }, { once: true });
+    } else if (window.Hls && Hls.isSupported()) {
+      hls = new Hls({
+        enableWorker: true,
+        startLevel: -1,
+        capLevelToPlayerSize: true,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        backBufferLength: 20,
+        lowLatencyMode: false
+      });
+
+      hls.loadSource(playUrl);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+        data.levels.forEach(function (lvl, i) {
+          var opt = document.createElement("option");
+          opt.value = i;
+          opt.textContent = (lvl.height || "?") + "p " + Math.round(lvl.bitrate / 1000) + " kbps";
+          qualitySel.appendChild(opt);
+        });
+        video.play().catch(function () {});
+      });
+
+      hls.on(Hls.Events.ERROR, function (event, data) {
+        if (!data.fatal) return;
+        stats.textContent = "Error: " + data.type + " / " + data.details;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.startLoad();
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+        }
+      });
+
+      qualitySel.onchange = function () {
+        hls.currentLevel = parseInt(qualitySel.value, 10);
+      };
+    } else {
+      stats.textContent = "HLS is not supported in this browser";
+    }
+  }
+
+  document.getElementById("load").onclick = function () {
+    this.blur(); // keep focus off the button so Space does not click it again
+    load(srcInput.value.trim());
+  };
+
+  // Status line: buffered seconds ahead and active level (only once a source is loaded)
+  setInterval(function () {
+    if (!video.currentSrc && !hls) return;
+    if (stats.textContent.startsWith("Error") || stats.textContent.startsWith("Paste")) return;
+    var ahead = 0;
+    var b = video.buffered;
+    if (b.length) ahead = b.end(b.length - 1) - video.currentTime;
+    var level = hls && hls.currentLevel >= 0 ? " · level " + hls.currentLevel : "";
+    stats.textContent = "buffer " + ahead.toFixed(1) + "s" + level;
+  }, 1000);
+
+  // Keep the native video element from taking keyboard focus
+  video.addEventListener("focus", function () { video.blur(); });
+
+  // Keyboard seeking helpers
+  function getStep() {
+    var n = parseFloat(seekInput.value);
+    return isFinite(n) && n > 0 ? n : 5;
+  }
+
+  function seekBy(delta) {
+    var target = video.currentTime + delta;
+    if (target < 0) target = 0;
+    if (isFinite(video.duration) && target > video.duration) target = video.duration;
+    video.currentTime = target;
+  }
+
+  // Capture phase, so the native video handler never sees these keys
+  document.addEventListener("keydown", function (e) {
+    var tag = e.target && e.target.tagName;
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    var key = e.key.toLowerCase();
+
+    // Space toggles play/pause (the key reports " " on every layout)
+    if (key === " " || key === "spacebar") {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (video.paused) video.play().catch(function () {}); else video.pause();
+      return;
+    }
+
+    // "f" and "ب" (the F key on the Persian layout) toggle fullscreen
+    if (key === "f" || key === "ب") {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(function () {});
+      } else {
+        video.requestFullscreen().catch(function () {});
+      }
+      return;
+    }
+
+    // m / ئ (the M key on the Persian layout) toggle mute
+    if (key === "m" || key === "ئ") {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      video.muted = !video.muted;
+      return;
+    }
+
+    // j / ت (Persian J key) lower volume, k / ن (Persian K key) raise volume
+    if (key === "j" || key === "ت" || key === "k" || key === "ن") {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      var up = key === "k" || key === "ن";
+      video.volume = Math.min(1, Math.max(0, video.volume + (up ? 0.1 : -0.1)));
+      if (up) video.muted = false;
+      return;
+    }
+
+    // Seek back: arrow left, a, ش (Persian A key), h, ا (Persian H key)
+    // Seek forward: arrow right, d, ی / ي (Persian D key), l, م (Persian L key)
+    var isBack = key === "arrowleft" || key === "a" || key === "ش" || key === "h" || key === "ا";
+    var isFwd = key === "arrowright" || key === "d" || key === "ی" || key === "ي" || key === "l" || key === "م";
+    if (!isBack && !isFwd) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    seekBy(isBack ? -getStep() : getStep());
+  }, true);
+
+  load(srcInput.value);
+})();
+</script>
+</body>
+</html>
