@@ -222,7 +222,7 @@
   </div>
 
   <div class="glass bar">
-    <input id="src" type="text" placeholder="Paste .m3u8 URL">
+    <input id="src" type="text" placeholder="Paste a Kick VOD link, video ID, or .m3u8 URL">
     <button id="load">Load</button>
     <label class="proxy-toggle"><input id="useProxy" type="checkbox" checked> Proxy</label>
     <select id="quality"><option value="-1">Auto</option></select>
@@ -269,7 +269,7 @@
 
   function load(url) {
     if (!url) {
-      stats.textContent = "Paste an .m3u8 URL and press Load";
+      stats.textContent = "Paste a Kick VOD link, video ID, or .m3u8 URL and press Load";
       return;
     }
     if (hls) { hls.destroy(); hls = null; }
