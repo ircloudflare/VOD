@@ -239,7 +239,7 @@
   // No default stream: paste an .m3u8 URL in the box, or use ?src=... in the page URL
   var DEFAULT_SRC = "";
 
-  // Proxy route on this Worker. When the Proxy box is checked, streams go through it.
+  // Proxy route on this server. When the Proxy box is checked, streams go through it.
   var PROXY_PATH = "/proxy?url=";
 
   var video = document.getElementById("video");
@@ -263,6 +263,10 @@
   var params = new URLSearchParams(location.search);
   srcInput.value = params.get("src") || DEFAULT_SRC;
 
+  // iPhone and iPad play HLS natively more reliably; everything else uses hls.js
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
   function load(url) {
     if (!url) {
       stats.textContent = "Paste an .m3u8 URL and press Load";
@@ -270,16 +274,11 @@
     }
     if (hls) { hls.destroy(); hls = null; }
     qualitySel.innerHTML = '<option value="-1">Auto</option>';
+    qualitySel.onchange = null;
 
     var playUrl = useProxyBox.checked ? PROXY_PATH + encodeURIComponent(url) : url;
 
-    // Safari (including iOS) plays HLS natively, which is more reliable than hls.js there
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = playUrl;
-      video.addEventListener("error", function () {
-        stats.textContent = "Playback error (native HLS)";
-      }, { once: true });
-    } else if (window.Hls && Hls.isSupported()) {
+    if (window.Hls && Hls.isSupported() && !isIOS) {
       hls = new Hls({
         enableWorker: true,
         startLevel: -1,
@@ -316,6 +315,11 @@
       qualitySel.onchange = function () {
         hls.currentLevel = parseInt(qualitySel.value, 10);
       };
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = playUrl;
+      video.addEventListener("error", function () {
+        stats.textContent = "Playback error (native HLS)";
+      }, { once: true });
     } else {
       stats.textContent = "HLS is not supported in this browser";
     }
