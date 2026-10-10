@@ -276,7 +276,11 @@
     qualitySel.innerHTML = '<option value="-1">Auto</option>';
     qualitySel.onchange = null;
 
-    var playUrl = useProxyBox.checked ? PROXY_PATH + encodeURIComponent(url) : url;
+    // VOD page links / bare IDs can only be resolved by the server, so they always go through the proxy
+    var isDirectM3u8 = /\.m3u8(\?|$)/i.test(url);
+    var playUrl = (useProxyBox.checked || !isDirectM3u8)
+      ? PROXY_PATH + encodeURIComponent(url)
+      : url;
 
     if (window.Hls && Hls.isSupported() && !isIOS) {
       hls = new Hls({
