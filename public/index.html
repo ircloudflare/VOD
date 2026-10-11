@@ -213,6 +213,117 @@
     .player { padding: 0; border-radius: 0; }
     video { border-radius: 0; max-height: 100vh; }
   }
+
+  /* ---------- Saved links drawer ---------- */
+  .bar button.ghost {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--glass-border);
+  }
+
+  .drawer {
+    position: fixed;
+    top: 16px; bottom: 16px; right: 16px;
+    width: min(340px, calc(100vw - 76px));
+    z-index: 10;
+    border-radius: 20px;
+    background: rgba(20, 24, 36, 0.72);
+    transform: translateX(calc(100% + 16px));
+    transition: transform 0.3s ease;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  .tab {
+    position: absolute;
+    left: -44px; top: 50%;
+    transform: translateY(-50%);
+    width: 44px; height: 96px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    border: 1px solid var(--glass-border); border-right: 0;
+    border-radius: 16px 0 0 16px;
+    background: rgba(20, 24, 36, 0.75);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    color: #fff; font: 700 12px system-ui; cursor: pointer; padding: 0;
+  }
+  .tab svg, .drawer-head svg { display: block; }
+
+  .drawer-body {
+    height: 100%;
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 16px;
+    visibility: hidden;
+    transition: visibility 0s 0.3s;
+  }
+  .drawer.open .drawer-body { visibility: visible; transition: visibility 0s; }
+
+  .drawer-head { display: flex; align-items: center; gap: 8px; color: var(--accent); }
+  .drawer-head input {
+    flex: 1; min-width: 0;
+    background: transparent; border: 1px solid transparent; border-radius: 10px;
+    color: #fff; font: 600 15px system-ui; padding: 6px 8px; outline: none;
+  }
+  .drawer-head input:hover { border-color: var(--glass-border); }
+  .drawer-head input:focus { border-color: var(--accent); background: rgba(255, 255, 255, 0.08); }
+
+  .icon-btn {
+    width: 44px; height: 44px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 999px; border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06); color: var(--text); cursor: pointer; padding: 0;
+  }
+
+  .cards {
+    flex: 1; overflow-y: auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start;
+  }
+  .card {
+    position: relative; overflow: hidden; cursor: pointer;
+    border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .card:hover { border-color: rgba(142, 197, 255, 0.5); }
+  .card .thumb {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 72px; border: 0; color: #fff; cursor: pointer; padding: 0;
+  }
+  .card .del {
+    position: absolute; top: 6px; right: 6px;
+    width: 30px; height: 30px; border-radius: 999px; border: 0; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer;
+  }
+  .card .del:hover { background: rgba(220, 60, 60, 0.85); }
+  .card .meta { padding: 8px 10px; }
+  .card .name { font: 600 13px system-ui; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .link { font: 11px system-ui; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card input.rename {
+    width: 100%; font: 600 13px system-ui; color: #fff; padding: 2px 6px;
+    border-radius: 8px; border: 1px solid var(--accent); background: rgba(255, 255, 255, 0.1); outline: none;
+  }
+
+  .add-card {
+    min-height: 108px; border-radius: 16px;
+    border: 1px dashed rgba(142, 197, 255, 0.6); background: rgba(142, 197, 255, 0.08);
+    color: var(--accent); font: 600 13px system-ui; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  .save-form {
+    grid-column: 1 / -1;
+    display: flex; flex-direction: column; gap: 8px; padding: 12px;
+    border-radius: 16px; border: 1px solid rgba(142, 197, 255, 0.5); background: rgba(142, 197, 255, 0.08);
+  }
+  .save-form input {
+    min-height: 44px; padding: 0 14px; border-radius: 999px; font-size: 16px;
+    border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.08); color: var(--text); outline: none;
+  }
+  .save-form input:focus { border-color: var(--accent); }
+  .save-form .row { display: flex; gap: 8px; }
+  .save-form .row button {
+    flex: 1; min-height: 44px; border-radius: 999px; font: 600 14px system-ui; color: #fff; cursor: pointer;
+    border: 1px solid rgba(142, 197, 255, 0.5); background: rgba(142, 197, 255, 0.25);
+  }
+  .save-form .row button.cancel { background: rgba(255, 255, 255, 0.06); border-color: var(--glass-border); }
+  .save-form .hint { font-size: 12px; color: #ffb3b3; min-height: 1em; }
 </style>
 </head>
 <body>
@@ -224,6 +335,7 @@
   <div class="glass bar">
     <input id="src" type="text" placeholder="Paste a Kick VOD link, video ID, or .m3u8 URL">
     <button id="load">Load</button>
+    <button id="saveBtn" class="ghost" title="Save this link">Save</button>
     <label class="proxy-toggle"><input id="useProxy" type="checkbox" checked> Proxy</label>
     <select id="quality"><option value="-1">Auto</option></select>
     <label>Seek
@@ -233,6 +345,23 @@
 
   <div id="stats"></div>
 </div>
+
+<aside id="drawer" class="glass drawer" aria-label="Saved links">
+  <button id="tab" class="tab" aria-expanded="false" aria-controls="drawerBody" title="Saved links">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v17l-6-4-6 4z"/></svg>
+    <span id="tabCount">0</span>
+  </button>
+  <div id="drawerBody" class="drawer-body">
+    <div class="drawer-head">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v17l-6-4-6 4z"/></svg>
+      <input id="drawerTitle" type="text" maxlength="40" value="Saved links" aria-label="Panel title" title="Click to rename">
+      <button id="closeDrawer" class="icon-btn" aria-label="Close panel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div id="cards" class="cards"></div>
+  </div>
+</aside>
 
 <script>
 (function () {
@@ -417,6 +546,184 @@
     e.stopImmediatePropagation();
     seekBy(isBack ? -getStep() : getStep());
   }, true);
+
+  // ---------- Saved links drawer ----------
+  var drawer = document.getElementById("drawer");
+  var tabBtn = document.getElementById("tab");
+  var tabCount = document.getElementById("tabCount");
+  var cardsEl = document.getElementById("cards");
+  var drawerTitle = document.getElementById("drawerTitle");
+  var saved = [];
+  var saving = false;
+  var PLAY_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>';
+  var X_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var PLUS_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
+  try {
+    var raw = JSON.parse(localStorage.getItem("savedLinks") || "[]");
+    if (Array.isArray(raw)) saved = raw.filter(function (x) { return x && typeof x.url === "string"; });
+    var t = localStorage.getItem("savedTitle");
+    if (t) drawerTitle.value = t;
+  } catch (err) {}
+
+  function persist() {
+    try { localStorage.setItem("savedLinks", JSON.stringify(saved)); } catch (err) {}
+  }
+
+  function setOpen(open) {
+    drawer.classList.toggle("open", open);
+    tabBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    try { localStorage.setItem("drawerOpen", open ? "1" : "0"); } catch (err) {}
+  }
+  tabBtn.onclick = function () { setOpen(!drawer.classList.contains("open")); this.blur(); };
+  document.getElementById("closeDrawer").onclick = function () { setOpen(false); this.blur(); };
+
+  drawerTitle.onchange = function () {
+    var v = drawerTitle.value.trim() || "Saved links";
+    drawerTitle.value = v;
+    try { localStorage.setItem("savedTitle", v); } catch (err) {}
+  };
+  drawerTitle.onkeydown = function (e) { if (e.key === "Enter") drawerTitle.blur(); };
+
+  function hueOf(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+    return h;
+  }
+
+  function defaultTitle(url) {
+    try {
+      var u = new URL(url);
+      var m = url.match(/\/videos\/([0-9a-f-]{8})/i);
+      return m ? u.pathname.split("/")[1] + " · " + m[1] : u.hostname;
+    } catch (err) {
+      return url.slice(0, 24);
+    }
+  }
+
+  function startRename(item, el) {
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.className = "rename"; inp.value = item.title; inp.maxLength = 60;
+    el.replaceWith(inp);
+    inp.focus(); inp.select();
+    var done = false;
+    function finish(commit) {
+      if (done) return;
+      done = true;
+      var v = inp.value.trim();
+      if (commit && v) { item.title = v; persist(); }
+      render();
+    }
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") finish(true);
+      else if (e.key === "Escape") finish(false);
+    });
+    inp.addEventListener("blur", function () { finish(true); });
+  }
+
+  function playSaved(item) {
+    srcInput.value = item.url;
+    load(item.url);
+    if (document.activeElement) document.activeElement.blur();
+  }
+
+  function buildCard(item) {
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var h = hueOf(item.title + item.url);
+    var thumb = document.createElement("button");
+    thumb.className = "thumb";
+    thumb.setAttribute("aria-label", "Play " + item.title);
+    thumb.style.background = "linear-gradient(135deg, hsl(" + h + " 70% 55%), hsl(" + ((h + 60) % 360) + " 60% 25%))";
+    thumb.innerHTML = PLAY_SVG;
+
+    var del = document.createElement("button");
+    del.className = "del";
+    del.setAttribute("aria-label", "Delete " + item.title);
+    del.innerHTML = X_SVG;
+    del.onclick = function (e) {
+      e.stopPropagation();
+      saved = saved.filter(function (x) { return x !== item; });
+      persist(); render();
+    };
+
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    var name = document.createElement("div");
+    name.className = "name"; name.textContent = item.title; name.title = "Double-click to rename";
+    name.ondblclick = function (e) { e.stopPropagation(); startRename(item, name); };
+    var link = document.createElement("div");
+    link.className = "link"; link.textContent = item.url.replace(/^https?:\/\//, ""); link.title = item.url;
+    meta.appendChild(name); meta.appendChild(link);
+
+    card.appendChild(thumb); card.appendChild(del); card.appendChild(meta);
+    card.onclick = function (e) {
+      if (e.target.closest(".del") || e.target.tagName === "INPUT") return;
+      playSaved(item);
+    };
+    return card;
+  }
+
+  function buildSaveForm() {
+    var form = document.createElement("div");
+    form.className = "save-form";
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.maxLength = 60; inp.placeholder = "Title (optional)";
+    inp.setAttribute("aria-label", "Title for this link");
+    var hint = document.createElement("div");
+    hint.className = "hint";
+    var row = document.createElement("div");
+    row.className = "row";
+    var ok = document.createElement("button"); ok.textContent = "Save";
+    var cancel = document.createElement("button"); cancel.textContent = "Cancel"; cancel.className = "cancel";
+    row.appendChild(ok); row.appendChild(cancel);
+    form.appendChild(inp); form.appendChild(hint); form.appendChild(row);
+
+    function confirmSave() {
+      var url = srcInput.value.trim();
+      if (!url) { hint.textContent = "Paste a link in the main box first"; return; }
+      var title = inp.value.trim() || defaultTitle(url);
+      var existing = saved.filter(function (x) { return x.url === url; })[0];
+      if (existing) existing.title = title;
+      else saved.push({ id: Date.now().toString(36), title: title, url: url });
+      saving = false;
+      persist(); render();
+    }
+    ok.onclick = confirmSave;
+    cancel.onclick = function () { saving = false; render(); };
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") confirmSave();
+      else if (e.key === "Escape") { saving = false; render(); }
+    });
+    setTimeout(function () { inp.focus(); }, 0);
+    return form;
+  }
+
+  function render() {
+    tabCount.textContent = saved.length;
+    cardsEl.innerHTML = "";
+    saved.forEach(function (item) { cardsEl.appendChild(buildCard(item)); });
+    if (saving) {
+      cardsEl.appendChild(buildSaveForm());
+    } else {
+      var add = document.createElement("button");
+      add.className = "add-card";
+      add.innerHTML = PLUS_SVG + "<span>Save current</span>";
+      add.onclick = function () { startSave(); };
+      cardsEl.appendChild(add);
+    }
+  }
+
+  function startSave() {
+    setOpen(true);
+    saving = true;
+    render();
+  }
+  document.getElementById("saveBtn").onclick = function () { this.blur(); startSave(); };
+
+  try { setOpen(localStorage.getItem("drawerOpen") === "1"); } catch (err) { setOpen(false); }
+  render();
 
   load(srcInput.value);
 })();
